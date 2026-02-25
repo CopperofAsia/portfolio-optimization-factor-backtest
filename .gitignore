@@ -1,29 +1,76 @@
-# Python
+####################################
+# Python bytecode / cache
+####################################
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
 
-# Jupyter
+####################################
+# Virtual environments
+####################################
+.env
+.venv
+venv/
+ENV/
+env/
+
+####################################
+# Jupyter Notebook
+####################################
 .ipynb_checkpoints/
 
-# IDE
+####################################
+# IDE / Editor settings
+####################################
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS
+####################################
+# OS generated files
+####################################
 .DS_Store
 Thumbs.db
 
-# Environments
-.env
-.venv/
-venv/
-conda/
+####################################
+# Logs
+####################################
+*.log
 
-# Data: keep only small samples tracked
+####################################
+# Data files
+####################################
 data/raw/
+data/interim/
 data/processed/
+data/tmp/
 
-# Outputs
-reports/figures/
+####################################
+# Model artifacts
+####################################
+models/
+*.joblib
+*.pt
+*.pth
+
+####################################
+# Build / distribution
+####################################
+build/
+dist/
+*.egg-info/
+
+####################################
+# Testing / coverage
+####################################
+.pytest_cache/
+.coverage
+htmlcov/
+
+####################################
+# Environment & secrets
+####################################
+.env.*
+*.key
+*.pem

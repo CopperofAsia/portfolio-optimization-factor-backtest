@@ -1,8 +1,7 @@
 # 组合优化与 PCA 因子回测
 
-基于中证 1000 小盘股池的**量化组合与因子回测**示例：先做 PCA 因子动量策略回测并产出收益与观点，再用 Markowitz 与 Black-Litterman 做组合优化。
+基于中证 1000 小盘股池的“量化组合与因子回测”示例：先做 PCA 因子动量策略回测并产出收益与观点，再用 Markowitz 与 Black-Litterman 做组合优化。
 
----
 
 ## 项目结构
 
@@ -27,8 +26,8 @@ portfolio-optimization-factor-backtest/
 │   └── efficient_frontier_comparison.png  # Markowitz vs BL 有效前缘对比
 ├── README.md
 └── LICENSE
+```
 
----
 
 ## 方法概览
 
@@ -52,7 +51,6 @@ portfolio-optimization-factor-backtest/
 - **观点**：从 `results/expRet.csv` 取最后一行的日均预期收益，年化（×252）后作为 10 支股票的预期年回报率，即 **P = I**，**q** = 年化预期收益向量。
 - 后验均值与协方差按标准 BL 公式计算，并绘制 BL 有效前缘；与 Markowitz 有效前缘画在同一张图中保存。
 
----
 
 ## 回测结果示例
 
@@ -82,7 +80,6 @@ portfolio-optimization-factor-backtest/
 
 ![有效前缘对比](results/efficient_frontier_comparison.png)
 
----
 
 ## 数据与配置说明
 
@@ -90,7 +87,6 @@ portfolio-optimization-factor-backtest/
 - **结果目录**：`results/` 由笔记本自动创建并写入；若需版本管理，可将 `results/*.csv`、`results/*.png` 按需加入或排除于 Git。
 - **Tushare**：仅 Markowitz/BL 笔记本中“用市值算 \(w_{mkt}\)”等步骤需要；Token 放在 `config/tushare_token.txt`，该文件已通过 `.gitignore` 排除，避免泄露。
 
----
 
 ## License
 

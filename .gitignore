@@ -74,3 +74,4 @@ htmlcov/
 .env.*
 *.key
 *.pem
+config/tushare_token.txt

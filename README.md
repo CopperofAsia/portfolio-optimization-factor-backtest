@@ -1,111 +1,97 @@
-# Quantitative Portfolio Optimization & PCA Factor Backtesting
+# 组合优化与 PCA 因子回测
 
-This repository contains a summer project with two connected parts:
-
-1. **Portfolio construction**: Markowitz mean–variance optimization (efficient frontier / tangency portfolio) and a **Black–Litterman** posterior return model.
-2. **Strategy backtesting**: A simple **PCA-based factor strategy** (daily re-fit) and a vectorized backtest with core performance metrics (Sharpe, cumulative return, max drawdown).
-
-> Goal: demonstrate the full workflow **from theory → implementation → backtest → risk evaluation**, in an engineering-friendly structure.
+基于中证 1000 小盘股池的**量化组合与因子回测**示例：先做 PCA 因子动量策略回测并产出收益与观点，再用 Markowitz 与 Black-Litterman 做组合优化。
 
 ---
 
-## Repository structure
+## 项目结构
 
-- `notebooks/`  
-  Research notebooks (explanation + experiments).  
-  - `01_markowitz_black_litterman.ipynb`  
-  - `02_pca_factor_backtest.ipynb`
-
-- `src/`  
-  Reusable code (what you would keep in a real project)
-  - `src/portfolio/markowitz.py` — efficient frontier, GMV, max-Sharpe
-  - `src/portfolio/black_litterman.py` — implied returns & BL posterior
-  - `src/factor/pca_strategy.py` — PCA factor signal → long/short positions
-  - `src/backtest/engine.py` — backtest engine (positions → returns)
-  - `src/backtest/performance.py` — Sharpe, cumulative return, max drawdown
-  - `src/utils/io.py` — load wide price tables (Date + tickers)
-
-- `data/`
-  - `data/sample/` — small sample data for reproducible demos (recommended)
-  - `data/raw/`, `data/processed/` — ignored by git (avoid pushing large files)
-
-- `scripts/`
-  - `run_portfolio.py` — CLI demo for Markowitz + BL
-  - `run_backtest.py` — CLI demo for PCA strategy backtest
-
----
-
-## Quickstart
-
-### 1) Create environment & install dependencies
-
-```bash
-pip install -r requirements.txt
 ```
-
-### 2) Run notebooks
-
-Open and run:
-- `notebooks/01_markowitz_black_litterman.ipynb`
-- `notebooks/02_pca_factor_backtest.ipynb`
-
-### 3) Run from command line (optional)
-
-**PCA factor backtest**
-```bash
-python scripts/run_backtest.py --data data/sample/IJR_small.txt --lookback 252 --num-factors 5 --top-n 50
-```
-
-**Markowitz + Black–Litterman demo**
-```bash
-python scripts/run_portfolio.py --data data/sample/prices.csv
-```
-
----
-
-## Method overview
-
-### Markowitz (mean–variance)
-
-Given expected returns **μ** and covariance **Σ**, solve:
-- **GMV**: minimize \( w^\top \Sigma w \) s.t. \( \sum w = 1 \)
-- **Efficient frontier**: minimize variance s.t. \( w^\top \mu = r_{target},\ \sum w = 1 \)
-- **Tangency**: maximize Sharpe ratio \( (w^\top \mu - r_f) / \sqrt{w^\top \Sigma w} \)
-
-### Black–Litterman
-
-- Prior (implied) equilibrium excess returns:
-  \[
-  \pi = \delta \Sigma w_{mkt}
-  \]
-- Add views \( (P, q, \Omega) \) to obtain posterior mean:
-  \[
-  \mu_{BL} = \left[(\tau\Sigma)^{-1} + P^\top\Omega^{-1}P\right]^{-1}
-            \left[(\tau\Sigma)^{-1}\pi + P^\top\Omega^{-1}q\right]
-  \]
-
-### PCA strategy (backtest)
-
-Daily re-fit using a rolling window:
-1) compute daily returns  
-2) run PCA on the return panel to obtain factors  
-3) multi-output regression of asset returns on factors  
-4) rank assets by cumulative predicted return in the window  
-5) long top-N and short bottom-N assets
-
-Performance metrics include cumulative compounded return and **maximum drawdown**.
+portfolio-optimization-factor-backtest/
+├── notebooks/                    # 研究用 Jupyter 笔记本
+│   ├── PCA_factor_backtest.ipynb           # PCA 因子策略回测（产出 results/）
+│   └── Markowitz_BL_portfolio_optimization.ipynb  # Markowitz + BL 组合优化（依赖 results/）
+├── src/
+│   ├── __init__.py
+│   └── calculateMaxDD.py        # 最大回撤与回撤持续期
+├── data/
+│   └── sample/                  # 示例数据（如 zhongzheng-1000.csv）
+├── config/
+│   └── tushare_token.txt        # Tushare Token（不提交，见 .gitignore）
+├── results/                      # 回测与组合输出（由 notebook 生成）
+│   ├── metrics_summary.csv      # 回测汇总指标
+│   ├── cumRet.png               # 累积收益曲线
+│   ├── dailyRet.csv             # 日收益率矩阵
+│   ├── positions.csv            # 日频持仓表
+│   ├── expRet.csv               # 预期收益表（供 BL 观点）
+│   └── efficient_frontier_comparison.png  # Markowitz vs BL 有效前缘对比
+├── README.md
+└── LICENSE
 
 ---
 
-## Notes on data
+## 方法概览
 
-The original factor notebook uses an ETF constituent panel (wide table: `Date` + many tickers).  
-To keep the repo lightweight, large datasets should **not** be committed. Use:
-- `data/sample/` for small demo files
-- a short note in the notebook/README describing how to obtain full data
+### 1. PCA 因子策略（回测）
+
+- 滚动窗口（默认 252 日）内对日收益率做 **PCA**，得到公共因子。
+- 用多输出回归得到每只股票在窗口内的**预测日均收益**，写入 `expRetTable`（导出为 `expRet.csv`）。
+- 按预测收益排序：做多前 `topN`、做空后 `topN`，得到日频持仓并计算策略收益。
+- 回测指标：年化收益、年化波动、夏普比、**最大回撤**、最大回撤持续期；并绘制累积收益曲线。
+
+### 2. Markowitz 均值–方差
+
+- 给定预期收益 **μ** 与协方差 **Σ**：
+  - **GMV**：最小化 \(w^\top\Sigma w\)，约束 \(\sum w=1\)、\(w\ge0\)。
+  - **有效前缘**：给定目标收益，最小化方差。
+  - **最大夏普**：最大化 \((w^\top\mu - r_f)/\sqrt{w^\top\Sigma w}\)。
+
+### 3. Black–Litterman
+
+- 先验：市值加权得到 \(w_{mkt}\)，隐含均衡收益 \(\pi = \delta\Sigma w_{mkt}\)。
+- **观点**：从 `results/expRet.csv` 取最后一行的日均预期收益，年化（×252）后作为 10 支股票的预期年回报率，即 **P = I**，**q** = 年化预期收益向量。
+- 后验均值与协方差按标准 BL 公式计算，并绘制 BL 有效前缘；与 Markowitz 有效前缘画在同一张图中保存。
+
+---
+
+## 回测结果示例
+
+### 累积收益曲线
+
+策略净值（1+累积收益）随时间的走势由 PCA 回测笔记本生成并保存为 `results/cumRet.png`：
+
+![累积收益曲线](results/cumRet.png)
+
+### 回测指标表
+
+`results/metrics_summary.csv` 包含一行汇总指标，例如：
+
+| 指标 | 说明 | 示例量级 |
+|------|------|----------|
+| Annualized Return | 年化收益率 | ~5.6% |
+| Annualized Volatility | 年化波动率 | ~12% |
+| Sharpe Ratio | 年化夏普比 | ~0.48 |
+| Max Drawdown | 最大回撤 | ~24% |
+| Max Drawdown Duration | 最大回撤持续天数 | ~671 日 |
+
+（具体数值以你本地回测结果为准。）
+
+### Markowitz vs Black–Litterman 有效前缘
+
+组合优化笔记本将两条有效前缘画在同一张图中并保存为 `results/efficient_frontier_comparison.png`：
+
+![有效前缘对比](results/efficient_frontier_comparison.png)
+
+---
+
+## 数据与配置说明
+
+- **行情数据**：使用 `data/sample/` 下宽表（如 `zhongzheng-1000.csv`），列为 `trade_date` 与各股票代码，行为日期、值为收盘价。
+- **结果目录**：`results/` 由笔记本自动创建并写入；若需版本管理，可将 `results/*.csv`、`results/*.png` 按需加入或排除于 Git。
+- **Tushare**：仅 Markowitz/BL 笔记本中“用市值算 \(w_{mkt}\)”等步骤需要；Token 放在 `config/tushare_token.txt`，该文件已通过 `.gitignore` 排除，避免泄露。
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
+MIT License.
